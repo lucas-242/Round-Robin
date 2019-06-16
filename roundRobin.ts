@@ -100,11 +100,11 @@ class Actions {
             let clock = (Date.now() - start);
 
             //Verifica se há proessos na fila e lança interrupções
-            if (this.verifyAwaitRow()) {
-                let randomProcess = AWAIT_ROW[Math.floor(Math.random() * AWAIT_ROW.length)];
-                if (!this.compareProcesses(EXECUTING_ROW[0], randomProcess))
-                    this.launchInterruption(randomProcess);
-            }
+            // if (this.verifyAwaitRow()) {
+            //     let randomProcess = AWAIT_ROW[Math.floor(Math.random() * AWAIT_ROW.length)];
+            //     if (!this.compareProcesses(EXECUTING_ROW[0], randomProcess))
+            //         this.launchInterruption(randomProcess);
+            // }
             
             if (clock >= ms)
                 break;
@@ -167,9 +167,8 @@ function Main() {
     //Insere na fila de espera
     actions.moveToRow(AWAIT_ROW, KEYBOARD);
     actions.moveToRow(AWAIT_ROW, MONITOR);
-
-    // actions.moveToRow(AWAIT_ROW, COMMUNICATION_TX);
-    // actions.moveToRow(AWAIT_ROW, COMMUNICATION_RX);
+    actions.moveToRow(AWAIT_ROW, COMMUNICATION_TX);
+    actions.moveToRow(AWAIT_ROW, COMMUNICATION_RX);
 
     //Variáveis auxiliares
     let process = new Process("", 0, 0);
