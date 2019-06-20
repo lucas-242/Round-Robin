@@ -1,10 +1,9 @@
-"use strict";
 /**Classe utilizada para definir os Processos */
 var Process = /** @class */ (function () {
-    function Process(name, quantum, interruption) {
+    function Process(name, quantum, priority) {
         this.name = name;
         this.quantum = quantum;
-        this.interruption = interruption;
+        this.priority = priority;
     }
     return Process;
 }());
@@ -32,7 +31,7 @@ var Actions = /** @class */ (function () {
     /**
      * Executa o primeiro processo da fila de executando
      */
-    Actions.prototype.executeProcess = function () {
+    Actions.prototype.resolveProcess = function () {
         var process = EXECUTING_ROW[0];
         console.log("Processo, " + process.name + " sendo executado");
         this.setTimeToExecute(TIME_TO_EXECUTE);
@@ -77,33 +76,30 @@ var Actions = /** @class */ (function () {
      */
     Actions.prototype.setTimeToExecute = function (ms) {
         var start = Date.now();
+        var countInterruption = 0;
         while (true) {
             var clock = (Date.now() - start);
-            //Verifica se há proessos na fila e lança interrupções
-            // if (this.verifyAwaitRow()) {
-            //     let randomProcess = AWAIT_ROW[Math.floor(Math.random() * AWAIT_ROW.length)];
-            //     if (!this.compareProcesses(EXECUTING_ROW[0], randomProcess))
-            //         this.launchInterruption(randomProcess);
-            // }
             if (clock >= ms)
                 break;
         }
     };
     /**
-     * Lança uma interrupção
-     * @param process Processo
+     * Resolve um processo, verifica se o processo terminou e move para uma determinada fila
+     * @param resultProcess Instância do processo
      */
-    Actions.prototype.launchInterruption = function (process) {
-        console.log("Interrupção vinda do processo " + process.name);
-    };
-    /**
-     * Executa uma interrução que foi lançada
-     */
-    Actions.prototype.executeInterruption = function () {
-        var process = this.removeRow(EXECUTING_ROW);
-        this.moveToRow(AWAIT_ROW, process);
-        console.log("Processo " + process.name + " parado e movido para a fila de espera");
-        this.executeProcess();
+    Actions.prototype.execute = function (resultProcess) {
+        if (this.resolveProcess() == 0) {
+            //Caso o processo tenha terminado
+            resultProcess = this.removeRow(EXECUTING_ROW);
+            this.moveToRow(READY_ROW, resultProcess);
+            console.log("Processo " + resultProcess.name + " finalizado e movido para a fila de prontos");
+        }
+        else {
+            //Caso o processo não tenha terminado
+            resultProcess = this.removeRow(EXECUTING_ROW);
+            this.moveToRow(AWAIT_ROW, resultProcess);
+            console.log("Processo " + resultProcess.name + " parado e movido para a fila de espera");
+        }
     };
     return Actions;
 }());
@@ -112,15 +108,15 @@ var QUANTUM = 2;
 /**Quantum gasto pela troca de contexto */
 var CONTEXT_CHANGE = 1;
 /**Tempo de execução de cada função em milisegundos */
-var TIME_TO_EXECUTE = 2000; //5000;
+var TIME_TO_EXECUTE = 2000;
 /**Processo do teclado */
 var KEYBOARD = new Process("keyboard", 5, 1);
 /**Processo do monitor */
-var MONITOR = new Process("monitor", 8, 10);
+var MONITOR = new Process("monitor", 8, 0);
 /**Processo da rede de comunicação tx */
-var COMMUNICATION_TX = new Process("TX communication", 15, 5);
+var COMMUNICATION_TX = new Process("TX communication", 15, 2);
 /**Processo da rede de comunicação rx */
-var COMMUNICATION_RX = new Process("RX communication", 14, 6);
+var COMMUNICATION_RX = new Process("RX communication", 14, 2);
 /**Fila de processos prontos */
 var READY_ROW = new Array();
 /**Fila de processos em execução */
@@ -130,8 +126,6 @@ var AWAIT_ROW = new Array();
 /**Instância das ações */
 var actions = new Actions();
 function Main() {
-    /* TODO: Deverá ser desenvovido o conceito de multiple threads para assim existir uma       função que irá ser executada de x em x tempos para simular a interrupção de sistema */
-    // setInterval(actions.launchInterruption, 1000, KEYBOARD);
     //Insere na fila de espera
     actions.moveToRow(AWAIT_ROW, KEYBOARD);
     actions.moveToRow(AWAIT_ROW, MONITOR);
@@ -152,22 +146,10 @@ function Main() {
             actions.changeContext();
             console.log("Troca de contexto realizada");
         }
-        //Executa o processo
-        if (actions.executeProcess() == 0) {
-            //Caso o processo tenha terminado
-            resultProcess = actions.removeRow(EXECUTING_ROW);
-            actions.moveToRow(READY_ROW, resultProcess);
-            console.log("Processo " + resultProcess.name + " finalizado e movido para a fila de prontos");
-        }
-        else {
-            //Caso o processo não tenha terminado
-            resultProcess = actions.removeRow(EXECUTING_ROW);
-            actions.moveToRow(AWAIT_ROW, resultProcess);
-            console.log("Processo " + resultProcess.name + " parado e movido para a fila de espera");
-        }
+        //Executa um processo e verifica para qual fila irá mandar o processo
+        actions.execute(resultProcess);
     }
     console.log("Quantum gasto pelo sistema: " + actions.totalTime);
     return '';
 }
 document.body.innerHTML = Main();
-//# sourceMappingURL=roundRobin.js.map
